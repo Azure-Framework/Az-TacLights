@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spotlight UI</title>
+  <style>
+/* Transparent page */
+:root, html, body {
+  background: transparent !important;
+  background-color: rgba(0,0,0,0) !important;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+html::before, html::after, body::before, body::after {
+  content: none !important;
+}
+
+/* Panel */
+* { box-sizing: border-box; }
+#spotlight-ui{
+  position:fixed;
+  top:10%;
+  left:50%;
+  transform:translateX(-50%) scale(.98);
+  width:320px;
+  border-radius:14px;
+  background:rgba(17,24,39,.96);
+  border:1px solid rgba(255,255,255,.07);
+  box-shadow:0 12px 50px rgba(0,0,0,.55);
+  color:#e5e7eb;
+  overflow:hidden;
+  pointer-events:none;
+  display:none;
+  opacity:0;
+  transition:
+    opacity .15s ease,
+    transform .15s ease,
+    left .05s ease,
+    top .05s ease;
+}
+#spotlight-ui.visible{
+  display:block;
+  opacity:1;
+  transform:translateX(-50%) scale(1);
+}
+#spotlight-ui.focused{
+  pointer-events:auto;
+}
+
+/* Header */
+.header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 14px;
+  background:linear-gradient(180deg, rgba(31,41,55,1), rgba(17,24,39,1));
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.header-left{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.header .title-text{
+  font-weight:700;
+  letter-spacing:.25px;
+  color:#f9fafb;
+  font-size:15px;
+}
+.badge{
+  font-size:11px;
+  padding:2px 8px;
+  border-radius:999px;
+  background:rgba(59,130,246,.18);
+  color:#bfdbfe;
+  border:1px solid rgba(59,130,246,.35);
+}
+.header-close{
+  border:none;
+  background:transparent;
+  color:#9ca3af;
+  font-size:16px;
+  line-height:1;
+  padding:4px 6px;
+  border-radius:999px;
+  cursor:pointer;
+  transition:background .12s ease, color .12s ease, transform .08s ease;
+}
+.header-close:hover{
+  background:rgba(55,65,81,.8);
+  color:#e5e7eb;
+  transform:scale(1.05);
+}
+
+/* Body */
+.section{ padding:14px 16px; }
+
+.buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-bottom:8px;
+}
+.buttons button{
+  appearance:none;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.08);
+  background:rgba(31,41,55,.85);
+  color:#e5e7eb;
+  font-weight:600;
+  font-size:14px;
+  letter-spacing:.2px;
+  padding:10px 8px;
+  cursor:pointer;
+  transition:
+    transform .08s ease,
+    box-shadow .15s ease,
+    background .15s ease,
+    border-color .15s ease;
+}
+.buttons button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 16px rgba(0,0,0,.25);
+}
+.buttons button:active{
+  transform:translateY(0);
+}
+.buttons button.active{
+  background:rgba(37,99,235,.95);
+  border-color:rgba(59,130,246,.9);
+  box-shadow:0 8px 22px rgba(37,99,235,.45);
+  color:#fff;
+}
+
+.row{
+  margin-top:8px;
+}
+.row .full{
+  width:100%;
+}
+
+/* Reset button */
+#resetBtn{
+  margin-top:2px;
+  border-radius:10px;
+  border:1px solid rgba(148,163,184,.4);
+  background:rgba(15,23,42,.9);
+  color:#e5e7eb;
+  font-size:13px;
+  padding:9px 10px;
+  cursor:pointer;
+  font-weight:500;
+  transition:
+    background .15s ease,
+    border-color .15s ease,
+    transform .08s ease,
+    box-shadow .15s ease;
+}
+#resetBtn:hover{
+  background:rgba(30,64,175,.55);
+  border-color:rgba(59,130,246,.75);
+  box-shadow:0 6px 16px rgba(15,23,42,.75);
+  transform:translateY(-1px);
+}
+
+/* Footer actions */
+.actions{
+  display:flex;
+  gap:10px;
+  margin-top:12px;
+  border-top:1px solid rgba(255,255,255,.06);
+  padding-top:12px;
+}
+.action-btn{
+  flex:1;
+  border-radius:10px;
+  padding:10px 12px;
+  font-weight:700;
+  font-size:14px;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(31,41,55,.9);
+  color:#e5e7eb;
+  transition:
+    filter .15s ease,
+    transform .08s ease,
+    background .15s ease,
+    border-color .15s ease;
+}
+.action-btn:hover{
+  filter:brightness(1.07);
+  transform:translateY(-1px);
+}
+.action-danger{
+  background:rgba(239,68,68,.14);
+  border-color:rgba(239,68,68,.35);
+  color:#fecaca;
+}
+.action-primary{
+  background:rgba(59,130,246,.18);
+  border-color:rgba(59,130,246,.45);
+  color:#dbeafe;
+}
+
+/* Hints */
+.hints{
+  margin-top:10px;
+  font-size:12px;
+  color:#94a3b8;
+  display:grid;
+  gap:4px;
+}
+.hints strong{
+  color:#e5e7eb;
+}
+kbd{
+  background:rgba(148,163,184,.18);
+  border:1px solid rgba(148,163,184,.35);
+  padding:1px 6px;
+  border-radius:6px;
+  font-size:11px;
+  font-weight:700;
+  color:#e2e8f0;
+}
+  </style>
+</head>
+<body>
+  <div id="spotlight-ui" aria-live="polite" aria-atomic="true">
+    <div class="header" id="dragHandle">
+      <div class="header-left">
+        <span class="title-text">Spotlight Control</span>
+        <span class="badge" id="liveBadge">LIVE</span>
+      </div>
+      <button id="headerCloseBtn" class="header-close" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="section">
+      <div class="buttons" role="group" aria-label="Spotlight toggles">
+        <button id="floodBtn">Floodlights</button>
+        <button id="alleyBtn">Alley Lights</button>
+        <button id="trackBtn">Track Vehicle</button>
+        <button id="allBtn">All Lights</button>
+      </div>
+
+      <div class="row">
+        <button id="resetBtn" class="full">Reset Alley Offsets</button>
+      </div>
+
+      <div class="actions">
+        <button id="closeUiBtn" class="action-btn action-primary">Close UI</button>
+        <button id="unfocusBtn" class="action-btn action-danger">Unfocus</button>
+      </div>
+
+      <div class="hints">
+        <div>
+          <strong>Open:</strong> <kbd>/spotlightui</kbd>
+          • <strong>Unfocus:</strong> <kbd>ESC</kbd> or <kbd>Unfocus</kbd>
+        </div>
+        <div>
+          <strong>Controls:</strong> Arrows aim/move • <kbd>Shift</kbd>+<kbd>↑/↓</kbd> mount-Z •
+          <kbd>Ctrl</kbd> translate pods
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+const ui    = document.getElementById('spotlight-ui');
+const live  = document.getElementById('liveBadge');
+const flood = document.getElementById('floodBtn');
+const alley = document.getElementById('alleyBtn');
+const track = document.getElementById('trackBtn');
+const all   = document.getElementById('allBtn');
+const reset = document.getElementById('resetBtn');
+const header= document.getElementById('dragHandle');
+const headerCloseBtn = document.getElementById('headerCloseBtn');
+const closeUiBtn = document.getElementById('closeUiBtn');
+const unfocusBtn = document.getElementById('unfocusBtn');
+
+let isDragging = false, offX = 0, offY = 0;
+
+function post(route, body){
+  return fetch(`https://${GetParentResourceName()}/${route}`, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: body ? JSON.stringify(body) : '{}'
+  }).catch(()=>{});
+}
+
+window.addEventListener('message', (e)=>{
+  const d = e.data || {};
+
+  if (d.action === 'open'){
+    ui.classList.add('visible');
+    ui.style.display='block';
+    // we assume Lua sends focus=true right after open
+  }
+
+  if (d.action === 'focus'){
+    ui.classList.toggle('focused', !!d.focus);
+  }
+
+  if (d.action === 'update'){
+    flood.classList.toggle('active', !!d.flood);
+    alley.classList.toggle('active', !!d.alley);
+    track.classList.toggle('active', !!d.track);
+    all.classList.toggle('active', !!d.flood && !!d.alley && !!d.track);
+  }
+
+  if (d.action === 'offsetsUpdate'){
+    // simple pulse on LIVE to show update
+    live.animate(
+      [{opacity:1},{opacity:.3},{opacity:1}],
+      {duration:420, iterations:1}
+    );
+  }
+
+  if (d.action === 'close'){
+    ui.classList.remove('visible','focused');
+    ui.style.display='none';
+  }
+});
+
+/* Toggle routes */
+all.onclick   = () => post('toggleAll');
+flood.onclick = () => post('toggleFlood');
+alley.onclick = () => post('toggleAlley');
+track.onclick = () => post('toggleTrack');
+reset.onclick = () => post('snapAlley');
+
+/* Action buttons */
+closeUiBtn.onclick   = () => post('closeUI');  // hide panel + unfocus
+headerCloseBtn.onclick = () => post('closeUI');
+unfocusBtn.onclick   = () => post('escape');   // keep panel, drop focus
+
+/* ESC key = same as Unfocus */
+document.addEventListener('keydown', (e)=>{
+  if (e.key === 'Escape' && ui.classList.contains('visible')) {
+    e.preventDefault();
+    post('escape');
+  }
+});
+
+/* Dragging */
+header.addEventListener('mousedown', (e)=>{
+  if (!ui.classList.contains('focused')) return;
+  isDragging = true;
+  const r = ui.getBoundingClientRect();
+  offX = e.clientX - r.left;
+  offY = e.clientY - r.top;
+});
+document.addEventListener('mouseup', ()=>{ isDragging=false; });
+document.addEventListener('mousemove', (e)=>{
+  if (!isDragging) return;
+  ui.style.left = `${e.clientX - offX}px`;
+  ui.style.top  = `${e.clientY - offY}px`;
+});
+  </script>
+</body>
+</html>
