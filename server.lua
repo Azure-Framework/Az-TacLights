@@ -1,4 +1,3 @@
--- server.lua
 local lightStates = {}  -- [vehNetId] = { flood=bool, alley=bool, track=bool }
 
 RegisterNetEvent('spotlights:updateState')

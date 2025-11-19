@@ -1,7 +1,41 @@
--- config.lua
--- Put this file in your resource and add it as a shared script (see fxmanifest note below).
-
 Config = {}
+
+
+
+-- When true: only vehicles that match AllowedVehicleClasses / AllowedModels
+-- will actually SHOW spotlights. When false: behaves like original script.
+Config.RestrictToEmergency = true
+
+-- Allowed GTA vehicle classes (18 = emergency).
+-- Add more classes if you want, but 18 is the usual for LEO/EMS/FIRE.
+Config.AllowedVehicleClasses = {
+    18, -- emergency
+}
+
+-- Allowed vehicle models (names OR hashes).
+-- Adjust this list to match your fleet.
+Config.AllowedModels = {
+    -- Default GTA police/emergency examples:
+    'police',
+    'police2',
+    'police3',
+    'police4',
+    'policeb',
+    'policeold1',
+    'policeold2',
+    'sheriff',
+    'sheriff2',
+    'fbi',
+    'fbi2',
+    'ambulance',
+    'firetruk',
+
+    -- Add your custom models here, e.g.:
+    -- 'bcsopolice1',
+    -- 'bcsosuv1',
+    -- `bcsopolice2`,
+}
+
 
 -- Key & general behavior
 Config.Keybind = 100                 -- control index for toggle key (default L = 100)

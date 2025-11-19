@@ -1,6 +1,3 @@
--- client.lua
--- Spotlight System (UI + Input + Rendering)
-
 local Config = Config or require('config')
 if type(Config) == "table" and Config.Config then Config = Config.Config end
 
@@ -25,6 +22,54 @@ Config.Track = Config.Track or {}
 Config.Track.offset = Config.Track.offset or { x = 0.0, y = 1.2, z = 0.4 }
 Config.Track.color = Config.Track.color or { r = 255, g = 255, b = 255 }
 Config.Track.params = Config.Track.params or { intensity = 40.0, distance = 80.0, radius = 3.0, falloff = 1.0, unk = 0.0 }
+
+-- ---------- vehicle restriction (config-driven) ----------
+-- If RestrictToEmergency is not true, we behave exactly like the original script.
+Config.RestrictToEmergency = (Config.RestrictToEmergency == true)
+
+local allowedVehicleClasses = {}
+if type(Config.AllowedVehicleClasses) == "table" then
+  for _, classId in ipairs(Config.AllowedVehicleClasses) do
+    classId = tonumber(classId)
+    if classId then
+      allowedVehicleClasses[classId] = true
+    end
+  end
+end
+
+local allowedVehicleModels = {}
+if type(Config.AllowedModels) == "table" then
+  for _, model in ipairs(Config.AllowedModels) do
+    if type(model) == "string" then
+      allowedVehicleModels[GetHashKey(model)] = true
+    elseif type(model) == "number" then
+      allowedVehicleModels[model] = true
+    end
+  end
+end
+
+local function isVehicleAllowed(veh)
+  -- If restriction is disabled, allow everything (original behavior)
+  if not Config.RestrictToEmergency then
+    return true
+  end
+
+  if not veh or veh == 0 or not DoesEntityExist(veh) then
+    return false
+  end
+
+  local model = GetEntityModel(veh)
+  if allowedVehicleModels[model] then
+    return true
+  end
+
+  local classId = GetVehicleClass(veh)
+  if allowedVehicleClasses[classId] then
+    return true
+  end
+
+  return false
+end
 
 -- ---------- state ----------
 local lastVehicle       = nil
@@ -249,7 +294,7 @@ end
 
 -- ---------- networking ----------
 local function sendMyState()
-  if lastVehicle and DoesEntityExist(lastVehicle) then
+  if lastVehicle and DoesEntityExist(lastVehicle) and isVehicleAllowed(lastVehicle) then
     TriggerServerEvent('spotlights:updateState', VehToNet(lastVehicle), floodlightsOn, alleyLightsOn, trackMode)
   end
 end
@@ -537,92 +582,8 @@ Citizen.CreateThread(function()
 
     local veh = (not isOutOfVehicle and GetVehiclePedIsIn(ped, false)) or lastVehicle
 
-    if (floodlightsOn or alleyLightsOn) then
-      local shift = pressedAny(0, CTRLS.shift)
-      local ctrl  = pressedAny(0, CTRLS.ctrl)
-
-      -- Flood controls
-      if floodlightsOn then
-        local dx, dy, dz = 0.0, 0.0, 0.0
-        if arrowLeftPressed()  then dx = dx - MOVE_DELTA end
-        if arrowRightPressed() then dx = dx + MOVE_DELTA end
-        if arrowUpPressed()    then if shift then dz = dz + Z_DELTA else dy = dy + MOVE_DELTA end end
-        if arrowDownPressed()  then if shift then dz = dz - Z_DELTA else dy = dy - MOVE_DELTA end end
-
-        if dx ~= 0 or dy ~= 0 or dz ~= 0 then
-          moveFloodOffsets(dx, dy, dz)
-          ensureOffsets(Config.Flood.offsets)
-          if uiVisible then
-            SendNUIMessage({
-              action    = 'offsetsUpdate',
-              flood     = Config.Flood.offsets,
-              alley     = Config.Alley.offsets,
-              alleyMeta = alleyMeta
-            })
-          end
-        end
-      end
-
-      -- Alley controls
-      if alleyLightsOn then
-        if ctrl then
-          local dx, dy, dz = 0.0, 0.0, 0.0
-          if arrowLeftPressed()  then dx = dx - MOVE_DELTA end
-          if arrowRightPressed() then dx = dx + MOVE_DELTA end
-          if arrowUpPressed()    then if shift then dz = dz + Z_DELTA else dy = dy + MOVE_DELTA end end
-          if arrowDownPressed()  then if shift then dz = dz - Z_DELTA else dy = dy - MOVE_DELTA end end
-          if dx ~= 0 or dy ~= 0 or dz ~= 0 then
-            moveAlleyOffsetsLocal(dx, dy, dz)
-          end
-        else
-          local acted = false
-
-          if arrowLeftPressed() then
-            for _, m in ipairs(alleyMeta) do
-              m.aim = clamp((m.aim or 0.0) + AIM_DELTA, -math.pi/2, math.pi/2)
-            end
-            acted = true
-          end
-
-          if arrowRightPressed() then
-            for _, m in ipairs(alleyMeta) do
-              m.aim = clamp((m.aim or 0.0) - AIM_DELTA, -math.pi/2, math.pi/2)
-            end
-            acted = true
-          end
-
-          if arrowUpPressed() then
-            if shift then
-              changeAlleyMountZ(Z_DELTA)
-            else
-              changeAlleyPitch(PITCH_DELTA)
-            end
-            acted = true
-          end
-
-          if arrowDownPressed() then
-            if shift then
-              changeAlleyMountZ(-Z_DELTA)
-            else
-              changeAlleyPitch(-PITCH_DELTA)
-            end
-            acted = true
-          end
-
-          if acted and uiVisible then
-            SendNUIMessage({
-              action    = 'offsetsUpdate',
-              flood     = Config.Flood.offsets,
-              alley     = Config.Alley.offsets,
-              alleyMeta = alleyMeta
-            })
-          end
-        end
-      end
-    end
-
     -- Rendering
-    if veh and DoesEntityExist(veh) then
+    if veh and DoesEntityExist(veh) and isVehicleAllowed(veh) then
       if (not isOutOfVehicle) or (isOutOfVehicle and (floodlightsOn or alleyLightsOn or trackMode)) then
 
         if floodlightsOn then
@@ -714,7 +675,7 @@ Citizen.CreateThread(function()
     for netId, state in pairs(remoteStates) do
       if NetworkDoesNetworkIdExist(netId) then
         local veh = NetToVeh(netId)
-        if DoesEntityExist(veh) then
+        if DoesEntityExist(veh) and isVehicleAllowed(veh) then
           if state.flood then
             local fwd = GetEntityForwardVector(veh)
             for _, off in ipairs(Config.Flood.offsets) do
